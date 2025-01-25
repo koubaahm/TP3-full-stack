@@ -30,3 +30,23 @@ export function editShop(shop: MinimalShop): Promise<AxiosResponse<Shop>> {
 export function deleteShop(id: string): Promise<AxiosResponse<Shop>> {
     return axios.delete(`${process.env.REACT_APP_API}/shops/${id}`);
 }
+
+export function searchShops(
+    name?: string, 
+    page = 0, 
+    size = 9, 
+    inVacations?: boolean, 
+    startDate?: string, 
+    endDate?: string
+): Promise<Shop[]> {
+    const params = new URLSearchParams();
+    
+    if (name) params.append('name', name);
+    if (inVacations !== undefined) params.append('inVacations', inVacations.toString());
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    return axios
+        .get(`${process.env.REACT_APP_API}/shops/search`, { params })
+        .then(response => response.data);
+}

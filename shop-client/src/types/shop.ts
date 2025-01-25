@@ -7,6 +7,7 @@ export type Shop = {
     inVacations: boolean;
     openingHours: OpeningHours[];
     nbProducts: number;
+    nbDistinctCategories: number;
 };
 
 export type MinimalShop = {

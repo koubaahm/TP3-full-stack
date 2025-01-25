@@ -22,6 +22,9 @@ public class CategoryService {
     @PersistenceContext
     private EntityManager em;
 
+    /**
+     * Ajoute une nouvelle catégorie à la base de données.
+     */
     public Category createCategory(Category category) throws Exception {
         try {
             return categoryRepository.save(category);
@@ -30,18 +33,23 @@ public class CategoryService {
         }
     }
 
+    /**
+     * Supprime une catégorie par son ID, ainsi que ses relations avec les produits.
+     */
     @Transactional
     public void deleteCategoryById(long id) throws Exception {
         try {
             Category category = getCategory(id);
-            // delete nested relations with products
-            deleteNestedRelations(category);
+            deleteNestedRelations(category); // Supprime les relations avec les produits.
             categoryRepository.deleteById(id);
         } catch (Exception e) {
             throw new Exception(e.getMessage());
         }
     }
 
+    /**
+     * Récupère une catégorie par son ID.
+     */
     public Category getCategoryById(long id) throws Exception {
         try {
             return getCategory(id);
@@ -50,31 +58,42 @@ public class CategoryService {
         }
     }
 
+    /**
+     * Retourne une liste paginée des catégories, triée par ordre croissant d'ID.
+     */
     public Page<Category> getCategoryList(Pageable pageable) {
         return categoryRepository.findByOrderByIdAsc(pageable);
     }
 
+    /**
+     * Met à jour une catégorie existante dans la base de données.
+     */
     public Category updateCategory(Category category) throws Exception {
         try {
-            getCategory(category.getId());
-            return this.createCategory(category);
+            getCategory(category.getId()); // Vérifie que la catégorie existe.
+            return this.createCategory(category); // Enregistre les nouvelles données.
         } catch (Exception e) {
             throw new Exception(e.getMessage());
         }
     }
 
+    /**
+     * Supprime les relations entre une catégorie et ses produits associés.
+     */
     private void deleteNestedRelations(Category category) {
         List<Product> products = category.getProducts();
-        for (int i = 0; i < products.size(); i++) {
-            Product product = products.get(i);
+        for (Product product : products) {
             List<Category> categories = product.getCategories();
-            categories.remove(category);
+            categories.remove(category); // Retire la catégorie de chaque produit.
             product.setCategories(categories);
-            em.merge(product);
-            em.flush();
+            em.merge(product); // Met à jour le produit dans la base de données.
+            em.flush(); // Synchronise les changements.
         }
     }
 
+    /**
+     * Récupère une catégorie par son ID (utilisé en interne).
+     */
     private Category getCategory(Long id) throws Exception {
         Optional<Category> category = categoryRepository.findById(id);
         if (!category.isPresent()) {
@@ -82,4 +101,5 @@ public class CategoryService {
         }
         return category.get();
     }
+
 }

@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.Errors;
@@ -25,6 +26,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.validation.Valid;
+
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -69,6 +73,8 @@ public class ShopController {
                               example = "0"),
             @Parameter(name = "size",
                               description = "Number of records per page", example = "5"),
+            @Parameter(name = "nbDistinctCategories",
+                    description = "Number of distinct categories associated with shop's products")
     })
     public ResponseEntity<Page<Shop>> getAllShops(
             Pageable pageable,
@@ -112,4 +118,28 @@ public class ShopController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Shop>> searchShops(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Boolean inVacations,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    ) {
+        // Affichage des paramètres d'entrée
+        System.out.println("Requête de recherche des magasins reçue avec les paramètres suivants :");
+        System.out.println("name: " + name);
+        System.out.println("inVacations: " + inVacations);
+        System.out.println("startDate: " + startDate);
+        System.out.println("endDate: " + endDate);
+
+        // Appel au service pour effectuer la recherche
+        List<Shop> shops = service.searchShops(inVacations, startDate, endDate, name);
+
+        // Affichage des résultats retournés
+        System.out.println("Résultat de la recherche : " + shops.size() + " magasins trouvés.");
+
+        return ResponseEntity.ok(shops);
+    }
+
 }

@@ -9,14 +9,25 @@ import { MinimalProduct } from '../types';
 import Locale from '../types/locale';
 import { formatterProductForm, getLocalizedProduct } from '../utils';
 
-const schema = (product: MinimalProduct) => ({
-    nameFr: product.localizedProducts[0].name ? '' : 'Ce champ est requis',
-    nameEn:
-        !product.localizedProducts[1].name && !!product.localizedProducts[1].description
-            ? 'Une description est fournie en anglais donc le nom est requis'
-            : '',
-    price: product.price >= 0 ? '' : 'Le prix ne peut pas être un nombre négatif',
-});
+const schema = (product: MinimalProduct) => {
+    const errors: Record<string, string> = {};
+    
+    const frProduct = getLocalizedProduct(product.localizedProducts, Locale.FR);
+    if (!frProduct.name) {
+        errors.nameFr = 'Ce champ est requis';
+    }
+
+    const enProduct = getLocalizedProduct(product.localizedProducts, Locale.EN);
+    if (!!enProduct.description && !enProduct.name) {
+        errors.nameEn = 'Une description est fournie en anglais donc le nom est requis';
+    }
+
+    if (product.price < 0) {
+        errors.price = 'Le prix ne peut pas être un nombre négatif';
+    }
+
+    return errors;
+};
 
 const ProductForm = () => {
     const { id } = useParams();
@@ -25,8 +36,9 @@ const ProductForm = () => {
     const { setLoading } = useAppContext();
     const { setToast } = useToastContext();
     const [errors, setErrors] = useState<any>({});
+    const [backendErrors, setBackendErrors] = useState<string | null>(null);
     const [product, setProduct] = useState<MinimalProduct>({
-        price: 0,
+        price: 0, // in centimes
         shop: null,
         categories: [],
         localizedProducts: [
@@ -57,6 +69,12 @@ const ProductForm = () => {
                     setProduct({ ...res.data, id: id });
                 }
             })
+            .catch((error) => {
+                setToast({ 
+                    severity: 'error', 
+                    message: error.response?.data?.message || 'Une erreur est survenue lors du chargement'
+                });
+            })
             .finally(() => setLoading(false));
     };
 
@@ -66,13 +84,19 @@ const ProductForm = () => {
 
     const createProduct = (productToCreate: MinimalProduct) => {
         setLoading(true);
+        setBackendErrors(null);
         ProductService.createProduct(productToCreate)
             .then(() => {
                 navigate('/product');
                 setToast({ severity: 'success', message: 'Le produit a bien été créé' });
             })
-            .catch(() => {
-                setToast({ severity: 'error', message: 'Une erreur est survenue lors de la création' });
+            .catch((error) => {
+                const errorMessage = error.response?.data?.message;
+                if (errorMessage) {
+                    setBackendErrors(errorMessage);
+                } else {
+                    setToast({ severity: 'error', message: 'Une erreur est survenue lors de la création' });
+                }
             })
             .finally(() => {
                 setLoading(false);
@@ -81,13 +105,19 @@ const ProductForm = () => {
 
     const editProduct = (productToEdit: MinimalProduct) => {
         setLoading(true);
+        setBackendErrors(null);
         ProductService.editProduct(productToEdit)
             .then(() => {
                 navigate(`/product/${id}`);
                 setToast({ severity: 'success', message: 'Le produit a bien été modifié' });
             })
-            .catch(() => {
-                setToast({ severity: 'error', message: 'Une erreur est survenue lors de la modification' });
+            .catch((error) => {
+                const errorMessage = error.response?.data?.message;
+                if (errorMessage) {
+                    setBackendErrors(errorMessage);
+                } else {
+                    setToast({ severity: 'error', message: 'Une erreur est survenue lors de la modification' });
+                }
             })
             .finally(() => {
                 setLoading(false);
@@ -95,8 +125,9 @@ const ProductForm = () => {
     };
 
     const validate = () => {
-        setErrors(schema(product));
-        return Object.values(schema(product)).every((o) => o == '');
+        const validationErrors = schema(product);
+        setErrors(validationErrors);
+        return Object.keys(validationErrors).length === 0;
     };
 
     const handleSubmit = () => {
@@ -122,12 +153,12 @@ const ProductForm = () => {
     };
 
     const setPrice = (price: string) => {
-        const convertedPrice = parseFloat(price);
+        const convertedPrice = parseFloat(price.replace(',', '.'));
         if (Number.isNaN(convertedPrice)) {
             setProduct({ ...product, price: 0 });
             return;
         }
-        setProduct({ ...product, price: Number(convertedPrice.toFixed(2)) });
+        setProduct({ ...product, price: Math.round(convertedPrice * 100) });
     };
 
     const setShop = (shop: any) => {
@@ -140,11 +171,26 @@ const ProductForm = () => {
         setProduct({ ...product, categories: newCategories });
     };
 
-    return (
-        <Paper elevation={1} sx={{ padding: 4 }}>
-            <Typography variant="h2" sx={{ marginBottom: 3, textAlign: 'center' }}>
-                {isAddMode ? 'Ajouter un produit' : 'Modifier le produit'}
-            </Typography>
+        return (
+            <Paper elevation={1} sx={{ padding: 4 }}>
+                <Typography variant="h2" sx={{ marginBottom: 3, textAlign: 'center' }}>
+                    {isAddMode ? 'Ajouter un produit' : 'Modifier le produit'}
+                </Typography>
+    
+                {backendErrors && (
+                    <Typography 
+                        color="error" 
+                        sx={{ 
+                            textAlign: 'center', 
+                            marginBottom: 2, 
+                            backgroundColor: '#ffebee', 
+                            padding: 2, 
+                            borderRadius: 1 
+                        }}
+                    >
+                        {backendErrors}
+                    </Typography>
+                )}
 
             <FormControl sx={{ display: 'block', ml: 'auto', mr: 'auto', width: '75%', mb: 3 }}>
                 <Divider>Nom du produit</Divider>
@@ -204,7 +250,7 @@ const ProductForm = () => {
                         required
                         type="number"
                         label="Prix"
-                        value={product.price.toString()}
+                        value={(product.price / 100).toFixed(2)}
                         onChange={(e) => setPrice(e.target.value)}
                         fullWidth
                         InputProps={{

@@ -104,7 +104,10 @@ const ShopDetails = () => {
                         sx={{
                             width: 200,
                             display: 'flex',
-                            flexDirection: 'row',
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row'      
+                            },
                             alignItems: 'center',
                             justifyContent: 'space-between',
                         }}

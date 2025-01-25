@@ -35,27 +35,44 @@ const Products = () => {
     };
 
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-            <Typography variant="h2">Les produits</Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, px: 2, py: 4 }}>
+            <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 2 }}>
+                Les Produits
+            </Typography>
 
             <Box
                 sx={{
                     width: '100%',
                     display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'flex-end',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    justifyContent: { xs: 'center', sm: 'flex-end' },
+                    alignItems: 'center',
+                    gap: 2,
                 }}
             >
-                <Fab variant="extended" color="primary" aria-label="add" onClick={() => navigate('/product/create')}>
+                <Fab
+                    variant="extended"
+                    color="primary"
+                    aria-label="add"
+                    onClick={() => navigate('/product/create')}
+                    sx={{ px: 3 }}
+                >
                     <AddIcon sx={{ mr: 1 }} />
                     Ajouter un produit
                 </Fab>
             </Box>
 
-            {/* Products */}
-            <Grid container alignItems="center" rowSpacing={3} columnSpacing={3}>
+            {/* Products Grid */}
+            <Grid
+                container
+                spacing={3}
+                sx={{
+                    justifyContent: { xs: 'center', md: 'flex-start' },
+                    width: '100%',
+                }}
+            >
                 {products?.map((product) => (
-                    <Grid item key={product.id} xs={4}>
+                    <Grid item key={product.id} xs={12} sm={6} md={4}>
                         <ProductCard product={product} displayShop={true} />
                     </Grid>
                 ))}
@@ -63,9 +80,19 @@ const Products = () => {
 
             {/* Pagination */}
             {products?.length !== 0 ? (
-                <Pagination count={count} page={page} siblingCount={1} onChange={handleChangePagination} />
+                <Pagination
+                    count={count}
+                    page={page}
+                    siblingCount={1}
+                    onChange={handleChangePagination}
+                    sx={{
+                        mt: 4,
+                        display: 'flex',
+                        justifyContent: 'center',
+                    }}
+                />
             ) : (
-                <Typography variant="h5" sx={{ mt: -1 }}>
+                <Typography variant="h6" color="text.secondary" sx={{ mt: 4 }}>
                     Aucun produit correspondant
                 </Typography>
             )}

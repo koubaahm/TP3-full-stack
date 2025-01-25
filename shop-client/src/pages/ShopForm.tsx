@@ -12,6 +12,8 @@ import {
     Switch,
     TextField,
     Typography,
+    Grid,
+    Alert,
 } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
 import AddIcon from '@mui/icons-material/Add';
@@ -24,6 +26,14 @@ import { Dayjs } from 'dayjs';
 import { MinimalShop, ObjectPropertyString } from '../types';
 import { useAppContext, useToastContext } from '../context';
 
+interface ErrorResponse {
+    timestamp: number;
+    status: number;
+    error: string;
+    message: string;
+    path: string;
+}
+
 const schema = (shop: MinimalShop) => ({
     name: shop.name ? '' : 'Ce champ est requis',
 });
@@ -35,11 +45,18 @@ const ShopForm = () => {
     const { setLoading } = useAppContext();
     const { setToast } = useToastContext();
     const [errors, setErrors] = useState<ObjectPropertyString<MinimalShop>>();
+    const [backendErrors, setBackendErrors] = useState<string | null>(null);
     const [shop, setShop] = useState<MinimalShop>({
         name: '',
         inVacations: false,
         openingHours: [],
     });
+
+    const extractErrorMessage = (error: any): string => {
+        const errorResponse = error.response?.data as ErrorResponse;
+        return errorResponse?.message || 
+               'Une erreur est survenue lors du traitement de la requête';
+    };
 
     const getShop = (shopId: string) => {
         setLoading(true);
@@ -50,18 +67,26 @@ const ShopForm = () => {
                     id: id,
                 });
             })
+            .catch((error) => {
+                const errorMessage = extractErrorMessage(error);
+                setToast({ severity: 'error', message: errorMessage });
+                navigate('/');
+            })
             .finally(() => setLoading(false));
     };
 
     const createShop = () => {
         setLoading(true);
+        setBackendErrors(null);
         ShopService.createShop(shop)
             .then(() => {
                 navigate('/');
                 setToast({ severity: 'success', message: 'La boutique a bien été créée' });
             })
-            .catch(() => {
-                setToast({ severity: 'error', message: 'Une erreur est survenue lors de la création' });
+            .catch((error) => {
+                const errorMessage = extractErrorMessage(error);
+                setBackendErrors(errorMessage);
+                setToast({ severity: 'error', message: 'Échec de la création de la boutique' });
             })
             .finally(() => {
                 setLoading(false);
@@ -70,13 +95,16 @@ const ShopForm = () => {
 
     const editShop = () => {
         setLoading(true);
+        setBackendErrors(null);
         ShopService.editShop(shop)
             .then(() => {
                 navigate(`/shop/${id}`);
                 setToast({ severity: 'success', message: 'La boutique a bien été modifiée' });
             })
-            .catch(() => {
-                setToast({ severity: 'error', message: 'Une erreur est survenue lors de la modification' });
+            .catch((error) => {
+                const errorMessage = extractErrorMessage(error);
+                setBackendErrors(errorMessage);
+                setToast({ severity: 'error', message: 'Échec de la modification de la boutique' });
             })
             .finally(() => {
                 setLoading(false);
@@ -122,38 +150,49 @@ const ShopForm = () => {
     return (
         <>
             <Paper elevation={1} sx={{ padding: 4 }}>
+                {backendErrors && (
+                    <Alert 
+                        severity="error" 
+                        sx={{ mb: 3 }}
+                        onClose={() => setBackendErrors(null)}
+                    >
+                        {backendErrors}
+                    </Alert>
+                )}
+
                 <Typography variant="h2" sx={{ marginBottom: 3, textAlign: 'center' }}>
                     {isAddMode ? 'Ajouter une boutique' : 'Modifier la boutique'}
                 </Typography>
 
-                <Box sx={{ display: 'block', ml: 'auto', mr: 'auto', width: '80%', mb: 3 }}>
+                <Box sx={{ display: 'block', ml: 'auto', mr: 'auto', width: '100%', mb: 3 }}>
                     <Divider>Informations de la boutique</Divider>
-                    <FormControl sx={{ mt: 2, width: '50%' }}>
-                        <TextField
-                            autoFocus
-                            required
-                            label="Nom"
-                            value={shop.name}
-                            onChange={(e) => setShop({ ...shop, name: e.target.value })}
-                            fullWidth
-                            error={!!errors?.name}
-                            helperText={errors?.name}
-                            sx={{ marginBottom: 3 }}
-                        />
-
-                        <FormControlLabel
-                            value="start"
-                            control={
-                                <Switch
-                                    checked={shop.inVacations}
-                                    onChange={(e) => setShop({ ...shop, inVacations: e.target.checked })}
-                                    inputProps={{ 'aria-label': 'controlled' }}
-                                />
-                            }
-                            label="En congé"
-                            sx={{ marginBottom: 2 }}
-                        />
-                    </FormControl>
+                    <Grid container spacing={2} sx={{ mt: 2 }}>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                autoFocus
+                                required
+                                label="Nom"
+                                value={shop.name}
+                                onChange={(e) => setShop({ ...shop, name: e.target.value })}
+                                fullWidth
+                                error={!!errors?.name}
+                                helperText={errors?.name}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <FormControlLabel
+                                value="start"
+                                control={
+                                    <Switch
+                                        checked={shop.inVacations}
+                                        onChange={(e) => setShop({ ...shop, inVacations: e.target.checked })}
+                                        inputProps={{ 'aria-label': 'controlled' }}
+                                    />
+                                }
+                                label="En congé"
+                            />
+                        </Grid>
+                    </Grid>
 
                     {/* OpeningHours */}
                     <Divider>Horaires d&apos;ouverture de la boutique</Divider>
@@ -173,7 +212,7 @@ const ShopForm = () => {
                                         display: 'flex',
                                         flexDirection: 'row',
                                         justifyContent: 'center',
-                                        gap: 1,
+                                        gap: 2,
                                     }}
                                 >
                                     <FormControl sx={{ marginBottom: 2 }}>

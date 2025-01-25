@@ -40,7 +40,7 @@ public class Product {
     @Column(nullable = false)
     @PositiveOrZero(message = "Price must be positive")
     @NotNull(message = "Price may not be null")
-    private float price;
+    private int price;
 
     @ManyToOne
     private Shop shop;
@@ -57,7 +57,7 @@ public class Product {
         return localizedProduct;
     }
 
-    public float getPrice() {
+    public int getPrice() {
         return price;
     }
 
@@ -77,11 +77,19 @@ public class Product {
         this.localizedProduct = localizedProduct;
     }
 
-    public void setPrice(float price) {
+    public void setPrice(int price) {
         this.price = price;
     }
 
     public void setShop(Shop shop) {
         this.shop = shop;
+    }
+
+    public String getFormattedPrice() {
+        return String.format("%.2f €", price / 100.0);
+    }
+
+    public void setPriceFromFormattedString(String formattedPrice) {
+        this.price = (int) (Double.parseDouble(formattedPrice.replace(",", ".")) * 100);
     }
 }

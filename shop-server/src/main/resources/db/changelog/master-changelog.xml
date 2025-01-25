@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd">
+
+<changeSet id="create-shop-search-index" author="application-dev">
+<createTable tableName="shop_search_index">
+<column name="id" type="bigint">
+<constraints primaryKey="true" nullable="false"/>
+</column>
+<column name="shop_id" type="bigint">
+<constraints nullable="false"
+foreignKeyName="fk_shop_search_index_shop"
+references="shops(id)"/>
+</column>
+<column name="is_in_vacations" type="boolean">
+<constraints nullable="false"/>
+</column>
+<column name="created_at" type="date">
+<constraints nullable="false"/>
+</column>
+<column name="name" type="varchar(255)">
+<constraints nullable="false"/>
+</column>
+</createTable>
+
+<createIndex indexName="idx_shop_search_created_at" tableName="shop_search_index">
+<column name="created_at"/>
+</createIndex>
+
+<createIndex indexName="idx_shop_search_vacations" tableName="shop_search_index">
+<column name="is_in_vacations"/>
+</createIndex>
+</changeSet>
+
+<changeSet id="populate-shop-search-index" author="application-dev">
+<sql>
+INSERT INTO shop_search_index (id, shop_id, is_in_vacations, created_at, name)
+SELECT
+s.id,
+s.id,
+s.in_vacations,
+s.created_at,
+s.name
+FROM shops s;
+</sql>
+</changeSet>
+</databaseChangeLog>

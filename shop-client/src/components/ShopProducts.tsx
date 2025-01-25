@@ -46,17 +46,23 @@ const ShopProducts = ({ shopId }: Props) => {
     };
 
     return (
-        <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-            {/* Filters */}
+        <Box sx={{ 
+            width: '100%', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            gap: { xs: 2, sm: 3, md: 5 } 
+        }}>
             <Box
                 sx={{
                     width: '100%',
                     display: 'flex',
-                    flexDirection: 'row',
+                    flexDirection: { xs: 'column', sm: 'row' },
                     justifyContent: 'space-between',
+                    gap: { xs: 2, sm: 0 }
                 }}
             >
-                <FormControl sx={{ minWidth: 220 }}>
+                <FormControl sx={{ width: { xs: '100%', sm: 220 } }}>
                     <SelectPaginate
                         value={filter}
                         onChange={setFilter}
@@ -67,23 +73,32 @@ const ShopProducts = ({ shopId }: Props) => {
                 </FormControl>
             </Box>
 
-            <Grid container alignItems="center" rowSpacing={3} columnSpacing={3}>
+            <Grid container alignItems="stretch" spacing={2}>
                 {products?.map((product) => (
-                    <Grid item key={product.id} xs={4}>
+                    <Grid item key={product.id} xs={12} sm={6} md={4}>
                         <ProductCard product={product} />
                     </Grid>
                 ))}
             </Grid>
 
             {products?.length !== 0 ? (
-                <Pagination count={count} page={page} siblingCount={1} onChange={handleChangePagination} />
+                <Pagination 
+                    count={count} 
+                    page={page} 
+                    siblingCount={1} 
+                    onChange={handleChangePagination} 
+                    sx={{ 
+                        '& .MuiPagination-ul': { 
+                            justifyContent: 'center' 
+                        } 
+                    }} 
+                />
             ) : (
-                <Typography variant="h6" sx={{ mt: -4 }}>
+                <Typography variant="h6" sx={{ mt: -4, textAlign: 'center' }}>
                     Aucun produit correspondant
                 </Typography>
             )}
         </Box>
     );
 };
-
 export default ShopProducts;

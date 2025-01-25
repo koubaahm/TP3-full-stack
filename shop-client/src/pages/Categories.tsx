@@ -42,7 +42,10 @@ const Categories = () => {
                 sx={{
                     width: '100%',
                     display: 'flex',
-                    flexDirection: 'row',
+                    flexDirection: {
+                        xs: 'column',
+                        md: 'row'      
+                    },
                     justifyContent: 'flex-end',
                 }}
             >
@@ -55,7 +58,7 @@ const Categories = () => {
             {/* Categories */}
             <Grid container alignItems="center" rowSpacing={3} columnSpacing={3}>
                 {categories?.map((category) => (
-                    <Grid item key={category.id} xs={4}>
+                    <Grid item key={category.id} xs={12} sm={6} md={4}>
                         <CategoryCard category={category} />
                     </Grid>
                 ))}

@@ -26,11 +26,12 @@ import java.util.List;
 
 @Entity
 @Table(name = "shops")
-@Indexed(index = "idx_shops")
+@Indexed(index = "shops")
 public class Shop {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd")
+    @GenericField
     private LocalDate createdAt;
 
     @Id
@@ -38,15 +39,15 @@ public class Shop {
     private long id;
 
     @Column(nullable = false)
+    @Size(min = 1, max = 255, message = "Name must be between 1 and 255 characters")
+    @NotNull(message = "Name may not be null")
+    @FullTextField(analyzer = "standard")
+    private String name;
+
+    @Column(nullable = false)
     @NotNull(message = "InVacations may not be null")
     @GenericField
     private boolean inVacations;
-
-    @Column(nullable = false)
-    @Size(min = 1, max = 255, message = "Name must be between 1 and 255 characters")
-    @NotNull(message = "Name may not be null")
-    @FullTextField
-    private String name;
 
     @Formula(value = "(SELECT COUNT(*) FROM products p WHERE p.shop_id = id)")
     private Long nbProducts;
@@ -98,7 +99,7 @@ public class Shop {
         this.name = name;
     }
 
-    public void setNbProducts(Long nbProducts) {
+    public void setNbProducts(long nbProducts) {
         this.nbProducts = nbProducts;
     }
 
@@ -108,5 +109,14 @@ public class Shop {
 
     public void setProducts(List<Product> products) {
         this.products = products;
+    }
+
+    @Formula(value = "(SELECT COUNT(DISTINCT pc.category_id) FROM products p " +
+            "JOIN products_categories pc ON p.id = pc.product_id " +
+            "WHERE p.shop_id = id)")
+    private Long nbDistinctCategories;
+
+    public Long getNbDistinctCategories() {
+        return nbDistinctCategories;
     }
 }

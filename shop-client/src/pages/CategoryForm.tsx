@@ -5,9 +5,15 @@ import { useAppContext, useToastContext } from '../context';
 import { CategoryService } from '../services';
 import { MinimalCategory, ObjectPropertyString } from '../types';
 
-const schema = (category: MinimalCategory) => ({
-    name: category.name ? '' : 'Ce champ est requis',
-});
+const schema = (category: MinimalCategory) => {
+    const errors: Record<string, string> = {};
+    
+    if (!category.name) {
+        errors.name = 'Ce champ est requis';
+    }
+
+    return errors;
+};
 
 const CategoryForm = () => {
     const { id } = useParams();
@@ -15,10 +21,11 @@ const CategoryForm = () => {
     const navigate = useNavigate();
     const { setLoading } = useAppContext();
     const { setToast } = useToastContext();
-    const [errors, setErrors] = useState<ObjectPropertyString<MinimalCategory>>();
+    const [errors, setErrors] = useState<ObjectPropertyString<MinimalCategory>>({});
     const [category, setCategory] = useState<MinimalCategory>({
         name: '',
     });
+    const [backendErrors, setBackendErrors] = useState<string | null>(null);
 
     const getCategory = (categoryId: string) => {
         setLoading(true);
@@ -27,6 +34,12 @@ const CategoryForm = () => {
                 setCategory({
                     ...res.data,
                     id: id,
+                });
+            })
+            .catch((error) => {
+                setToast({ 
+                    severity: 'error', 
+                    message: error.response?.data?.message || 'Une erreur est survenue lors du chargement'
                 });
             })
             .finally(() => setLoading(false));
@@ -38,13 +51,19 @@ const CategoryForm = () => {
 
     const createCategory = () => {
         setLoading(true);
+        setBackendErrors(null);
         CategoryService.createCategory(category)
             .then(() => {
                 navigate('/category');
                 setToast({ severity: 'success', message: 'La catégorie a bien été créée' });
             })
-            .catch(() => {
-                setToast({ severity: 'error', message: 'Une erreur est survenue lors de la création' });
+            .catch((error) => {
+                const errorMessage = error.response?.data?.message;
+                if (errorMessage) {
+                    setBackendErrors(errorMessage);
+                } else {
+                    setToast({ severity: 'error', message: 'Une erreur est survenue lors de la création' });
+                }
             })
             .finally(() => {
                 setLoading(false);
@@ -53,13 +72,19 @@ const CategoryForm = () => {
 
     const editCategory = () => {
         setLoading(true);
+        setBackendErrors(null);
         CategoryService.editCategory(category)
             .then(() => {
                 navigate(`/category/${id}`);
                 setToast({ severity: 'success', message: 'La catégorie a bien été modifiée' });
             })
-            .catch(() => {
-                setToast({ severity: 'error', message: 'Une erreur est survenue lors de la modification' });
+            .catch((error) => {
+                const errorMessage = error.response?.data?.message;
+                if (errorMessage) {
+                    setBackendErrors(errorMessage);
+                } else {
+                    setToast({ severity: 'error', message: 'Une erreur est survenue lors de la modification' });
+                }
             })
             .finally(() => {
                 setLoading(false);
@@ -67,8 +92,9 @@ const CategoryForm = () => {
     };
 
     const validate = () => {
-        setErrors(schema(category));
-        return Object.values(schema(category)).every((o) => o == '');
+        const validationErrors = schema(category);
+        setErrors(validationErrors);
+        return Object.keys(validationErrors).length === 0;
     };
 
     const handleSubmit = () => {
@@ -85,6 +111,21 @@ const CategoryForm = () => {
             <Typography variant="h2" sx={{ marginBottom: 3, textAlign: 'center' }}>
                 {isAddMode ? 'Ajouter une catégorie' : 'Modifier la catégorie'}
             </Typography>
+
+            {backendErrors && (
+                <Typography 
+                    color="error" 
+                    sx={{ 
+                        textAlign: 'center', 
+                        marginBottom: 2, 
+                        backgroundColor: '#ffebee', 
+                        padding: 2, 
+                        borderRadius: 1 
+                    }}
+                >
+                    {backendErrors}
+                </Typography>
+            )}
 
             <FormControl
                 sx={{
@@ -103,7 +144,7 @@ const CategoryForm = () => {
                     label="Nom"
                     value={category.name}
                     onChange={(e) => setCategory({ ...category, name: e.target.value })}
-                    error={!!errors?.name}
+                    error={!!errors?.name || !!backendErrors}
                     helperText={errors?.name}
                     sx={{ my: 2, width: '75%', ml: 'auto', mr: 'auto' }}
                 />
