@@ -1,5 +1,4 @@
 version: "3.9"
-
 services:
   db:
     container_name: shop-db
@@ -24,15 +23,24 @@ services:
     hostname: "elasticsearch_docker"
     environment:
       discovery.type: single-node
+      ES_JAVA_OPTS : "-Xms1g -Xmx1g"
     ports:
       - "9200:9200"
     networks:
       - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   api:
     depends_on:
-      - "db"
-      - "elasticsearch"
+      db:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
     container_name: shop-server
     build: ./shop-server
     ports:
