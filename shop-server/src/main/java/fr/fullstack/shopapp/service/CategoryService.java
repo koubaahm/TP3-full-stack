@@ -3,7 +3,6 @@ package fr.fullstack.shopapp.service;
 import fr.fullstack.shopapp.model.Category;
 import fr.fullstack.shopapp.model.Product;
 import fr.fullstack.shopapp.repository.CategoryRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -16,14 +15,18 @@ import java.util.Optional;
 
 @Service
 public class CategoryService {
-    @Autowired
-    private CategoryRepository categoryRepository;
+
+    private final  CategoryRepository categoryRepository;
 
     @PersistenceContext
     private EntityManager em;
 
+    public CategoryService(CategoryRepository categoryRepository) {
+        this.categoryRepository = categoryRepository;
+    }
+
     /**
-     * Ajoute une nouvelle catégorie à la base de données.
+     * Ajouter une nouvelle catégorie à la base de données.
      */
     public Category createCategory(Category category) throws Exception {
         try {
@@ -34,13 +37,13 @@ public class CategoryService {
     }
 
     /**
-     * Supprime une catégorie par son ID, ainsi que ses relations avec les produits.
+     * Supprimer une catégorie par son ID, ainsi que ses relations avec les produits.
      */
     @Transactional
     public void deleteCategoryById(long id) throws Exception {
         try {
             Category category = getCategory(id);
-            deleteNestedRelations(category); // Supprime les relations avec les produits.
+            deleteNestedRelations(category);
             categoryRepository.deleteById(id);
         } catch (Exception e) {
             throw new Exception(e.getMessage());
@@ -48,7 +51,7 @@ public class CategoryService {
     }
 
     /**
-     * Récupère une catégorie par son ID.
+     * Récupérer une catégorie par son ID.
      */
     public Category getCategoryById(long id) throws Exception {
         try {
@@ -59,7 +62,7 @@ public class CategoryService {
     }
 
     /**
-     * Retourne une liste paginée des catégories, triée par ordre croissant d'ID.
+     * Retourner une liste paginée des catégories, triée par ordre croissant d'ID.
      */
     public Page<Category> getCategoryList(Pageable pageable) {
         return categoryRepository.findByOrderByIdAsc(pageable);
@@ -70,33 +73,33 @@ public class CategoryService {
      */
     public Category updateCategory(Category category) throws Exception {
         try {
-            getCategory(category.getId()); // Vérifie que la catégorie existe.
-            return this.createCategory(category); // Enregistre les nouvelles données.
+            getCategory(category.getId());
+            return this.createCategory(category);
         } catch (Exception e) {
             throw new Exception(e.getMessage());
         }
     }
 
     /**
-     * Supprime les relations entre une catégorie et ses produits associés.
+     * Supprimer les relations entre une catégorie et ses produits associés.
      */
     private void deleteNestedRelations(Category category) {
         List<Product> products = category.getProducts();
         for (Product product : products) {
             List<Category> categories = product.getCategories();
-            categories.remove(category); // Retire la catégorie de chaque produit.
+            categories.remove(category);
             product.setCategories(categories);
-            em.merge(product); // Met à jour le produit dans la base de données.
-            em.flush(); // Synchronise les changements.
+            em.merge(product);
+            em.flush();
         }
     }
 
     /**
-     * Récupère une catégorie par son ID (utilisé en interne).
+     * Récupèrer une catégorie par son ID (utilisé en interne).
      */
     private Category getCategory(Long id) throws Exception {
         Optional<Category> category = categoryRepository.findById(id);
-        if (!category.isPresent()) {
+        if (category.isEmpty()) {
             throw new Exception("Category with id " + id + " not found");
         }
         return category.get();

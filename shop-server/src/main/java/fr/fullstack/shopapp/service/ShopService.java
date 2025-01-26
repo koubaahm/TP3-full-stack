@@ -5,7 +5,6 @@ import fr.fullstack.shopapp.model.Product;
 import fr.fullstack.shopapp.model.Shop;
 import fr.fullstack.shopapp.repository.ShopRepository;
 import fr.fullstack.shopapp.repository.ShopSearchRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -16,7 +15,6 @@ import jakarta.persistence.PersistenceContext;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -25,15 +23,23 @@ public class ShopService {
     @PersistenceContext
     private EntityManager em;
 
-    @Autowired
-    private ShopRepository shopRepository;
-    @Autowired
-    private ShopSearchRepository shopSearchRepository;
+
+    private final ShopRepository shopRepository;
+
+    private final ShopSearchRepository shopSearchRepository;
+
+    public ShopService(ShopRepository shopRepository, ShopSearchRepository shopSearchRepository) {
+        this.shopRepository = shopRepository;
+        this.shopSearchRepository = shopSearchRepository;
+    }
+
+    /**
+     * Créer une nouvelle boutique et vérifie les horaires d'ouverture.
+     */
     @Transactional
     public Shop createShop(Shop shop) throws Exception {
         try {
             validateOpeningHours(shop.getOpeningHours());
-
             Shop newShop = shopRepository.save(shop);
             em.flush();
             em.refresh(newShop);
@@ -43,11 +49,13 @@ public class ShopService {
         }
     }
 
+    /**
+     * Supprimer une boutique par son identifiant.
+     */
     @Transactional
     public void deleteShopById(long id) throws Exception {
         try {
             Shop shop = getShop(id);
-            // delete nested relations with products
             deleteNestedRelations(shop);
             shopRepository.deleteById(id);
         } catch (Exception e) {
@@ -55,6 +63,9 @@ public class ShopService {
         }
     }
 
+    /**
+     * Récupérer une boutique par son identifiant.
+     */
     public Shop getShopById(long id) throws Exception {
         try {
             return getShop(id);
@@ -63,6 +74,9 @@ public class ShopService {
         }
     }
 
+    /**
+     * Retourner une liste paginée des boutiques avec des options de tri et de filtre.
+     */
     public Page<Shop> getShopList(
             Optional<String> sortBy,
             Optional<Boolean> inVacations,
@@ -70,27 +84,25 @@ public class ShopService {
             Optional<String> createdAfter,
             Pageable pageable
     ) {
-        // SORT
         if (sortBy.isPresent()) {
-            switch (sortBy.get()) {
-                case "name":
-                    return shopRepository.findByOrderByNameAsc(pageable);
-                case "createdAt":
-                    return shopRepository.findByOrderByCreatedAtAsc(pageable);
-                default:
-                    return shopRepository.findByOrderByNbProductsAsc(pageable);
-            }
+            return switch (sortBy.get()) {
+                case "name" -> shopRepository.findByOrderByNameAsc(pageable);
+                case "createdAt" -> shopRepository.findByOrderByCreatedAtAsc(pageable);
+                default -> shopRepository.findByOrderByNbProductsAsc(pageable);
+            };
         }
 
-        // FILTERS
         Page<Shop> shopList = getShopListWithFilter(inVacations, createdBefore, createdAfter, pageable);
         if (shopList != null) {
             return shopList;
         }
 
-        // NONE
         return shopRepository.findByOrderByIdAsc(pageable);
     }
+
+    /**
+     * Recherche des boutiques en fonction de critères spécifiques.
+     */
     public List<Shop> searchShops(
             Boolean inVacations,
             LocalDate startDate,
@@ -101,40 +113,49 @@ public class ShopService {
             return shopRepository.findAll();
         }
 
-        return shopSearchRepository.searchShops(
-                inVacations, startDate, endDate, name
-        );
+        return shopSearchRepository.searchShops(inVacations, startDate, endDate, name);
     }
 
+    /**
+     * Met à jour une boutique existante après validation des horaires.
+     */
     @Transactional
     public Shop updateShop(Shop shop) throws Exception {
         try {
             validateOpeningHours(shop.getOpeningHours());
-
             getShop(shop.getId());
             return this.createShop(shop);
         } catch (Exception e) {
             throw new Exception(e.getMessage());
         }
     }
+
+    /**
+     * Supprimer les relations imbriquées des produits d'une boutique.
+     */
     private void deleteNestedRelations(Shop shop) {
         List<Product> products = shop.getProducts();
-        for (int i = 0; i < products.size(); i++) {
-            Product product = products.get(i);
+        for (Product product : products) {
             product.setShop(null);
             em.merge(product);
             em.flush();
         }
     }
 
+    /**
+     * Récupérer une boutique par son identifiant.
+     */
     private Shop getShop(Long id) throws Exception {
         Optional<Shop> shop = shopRepository.findById(id);
-        if (!shop.isPresent()) {
+        if (shop.isEmpty()) {
             throw new Exception("Shop with id " + id + " not found");
         }
         return shop.get();
     }
 
+    /**
+     * Retourner une liste paginée de boutiques avec des filtres avancés.
+     */
     private Page<Shop> getShopListWithFilter(
             Optional<Boolean> inVacations,
             Optional<String> createdAfter,
@@ -178,36 +199,31 @@ public class ShopService {
             );
         }
 
-        if (createdAfter.isPresent()) {
-            return shopRepository.findByCreatedAtGreaterThan(
-                    LocalDate.parse(createdAfter.get()), pageable
-            );
-        }
+        return createdAfter.map(s -> shopRepository.findByCreatedAtGreaterThan(
+                LocalDate.parse(s), pageable
+        )).orElse(null);
 
-        return null;
     }
+
+    /**
+     * Valider les horaires d'ouverture pour éviter les chevauchements.
+     */
     private void validateOpeningHours(List<OpeningHoursShop> openingHours) throws Exception {
-        Map<Long, List<OpeningHoursShop>> hoursByDay = openingHours.stream()
-                .collect(Collectors.groupingBy(OpeningHoursShop::getDay));
+        openingHours.stream()
+                .collect(Collectors.groupingBy(OpeningHoursShop::getDay))
+                .forEach((day, dayHours) -> {
+                    dayHours.sort(Comparator.comparing(OpeningHoursShop::getOpenAt));
 
-        for (Map.Entry<Long, List<OpeningHoursShop>> dayEntry : hoursByDay.entrySet()) {
-            List<OpeningHoursShop> dayHours = dayEntry.getValue();
-
-            dayHours.sort(Comparator.comparing(OpeningHoursShop::getOpenAt));
-
-            for (int i = 0; i < dayHours.size() - 1; i++) {
-                OpeningHoursShop current = dayHours.get(i);
-                OpeningHoursShop next = dayHours.get(i + 1);
-
-                if (next.getOpenAt().isBefore(current.getCloseAt())) {
-                    throw new Exception(String.format(
-                            "Overlapping opening hours on day %d: %s-%s conflicts with %s-%s",
-                            current.getDay(),
-                            current.getOpenAt(), current.getCloseAt(),
-                            next.getOpenAt(), next.getCloseAt()
-                    ));
-                }
-            }
-        }
+                    for (int i = 0; i < dayHours.size() - 1; i++) {
+                        if (dayHours.get(i + 1).getOpenAt().isBefore(dayHours.get(i).getCloseAt())) {
+                            throw new IllegalArgumentException(String.format(
+                                    "Overlapping opening hours on day %d: %s-%s conflicts with %s-%s",
+                                    day,
+                                    dayHours.get(i).getOpenAt(), dayHours.get(i).getCloseAt(),
+                                    dayHours.get(i + 1).getOpenAt(), dayHours.get(i + 1).getCloseAt()
+                            ));
+                        }
+                    }
+                });
     }
 }
