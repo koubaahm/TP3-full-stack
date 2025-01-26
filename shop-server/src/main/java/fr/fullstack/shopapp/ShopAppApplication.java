@@ -13,6 +13,10 @@ public class ShopAppApplication {
         SpringApplication.run(ShopAppApplication.class, args);
     }
 
+    /**
+     * Configure la documentation OpenAPI (Swagger) pour l'API ShopApp.
+     *
+     */
     @Bean
     public GroupedOpenApi shopAppApi() {
         return GroupedOpenApi.builder()
@@ -22,4 +26,5 @@ public class ShopAppApplication {
                 .displayName("Shop Management API")
                 .build();
     }
+
 }

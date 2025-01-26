@@ -3,7 +3,6 @@ package fr.fullstack.shopapp.repository;
 import fr.fullstack.shopapp.model.Shop;
 import org.hibernate.search.mapper.orm.Search;
 import org.hibernate.search.mapper.orm.session.SearchSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,8 +12,12 @@ import java.util.List;
 
 @Repository
 public class ShopSearchRepository {
-    @Autowired
-    private EntityManager entityManager;
+
+    private final EntityManager entityManager;
+
+    public ShopSearchRepository(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
 
     @Transactional(readOnly = true)
     public List<Shop> searchShops(

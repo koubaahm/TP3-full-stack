@@ -6,7 +6,6 @@ import fr.fullstack.shopapp.util.ErrorValidation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -28,8 +27,12 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/v1/categories")
 public class CategoryController {
 
-    @Autowired
-    private CategoryService service;
+
+    private final CategoryService service;
+
+    public CategoryController(CategoryService service) {
+        this.service = service;
+    }
 
     @Operation(summary = "Create a category")
     @PostMapping

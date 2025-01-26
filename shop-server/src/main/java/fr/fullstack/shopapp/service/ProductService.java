@@ -109,7 +109,7 @@ public class ProductService {
     }
 
     /**
-     * Récupèrer un produit par son identifiant ou lève une exception s'il n'existe pas.
+     * Récupérer un produit par son identifiant ou lève une exception s'il n'existe pas.
      */
     private Product getProduct(Long id) throws Exception {
         Optional<Product> product = productRepository.findById(id);

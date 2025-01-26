@@ -16,8 +16,7 @@ public class StringEnumerationValidator implements ConstraintValidator<StringEnu
         for (int i = 0; i < enums.length; i++) {
             names[i] = enums[i].name();
         }
-        Set<String> mySet = new HashSet<String>(Arrays.asList(names));
-        return mySet;
+        return new HashSet<String>(Arrays.asList(names));
     }
 
     @Override

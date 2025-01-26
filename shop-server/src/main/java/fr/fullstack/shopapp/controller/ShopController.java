@@ -6,8 +6,6 @@ import fr.fullstack.shopapp.util.ErrorValidation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -35,8 +33,12 @@ import java.util.Optional;
 @RequestMapping("/api/v1/shops")
 public class ShopController {
     // TODO ADD PLAIN TEXT SEARCH FOR SHOP
-    @Autowired
-    private ShopService service;
+
+    private  final ShopService service;
+
+    public ShopController(ShopService service) {
+        this.service = service;
+    }
 
     @Operation(summary = "Create a shop")
     @PostMapping
@@ -126,20 +128,20 @@ public class ShopController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
     ) {
-        // Affichage des paramètres d'entrée
-        System.out.println("Requête de recherche des magasins reçue avec les paramètres suivants :");
-        System.out.println("name: " + name);
-        System.out.println("inVacations: " + inVacations);
-        System.out.println("startDate: " + startDate);
-        System.out.println("endDate: " + endDate);
+        // print parameters in the console for debugging
+        System.out.println("Search parameter - name: " + name);
+        System.out.println("Search parameter - inVacations: " + inVacations);
+        System.out.println("Search parameter - startDate: " + startDate);
+        System.out.println("Search parameter - endDate: " + endDate);
 
-        // Appel au service pour effectuer la recherche
+
         List<Shop> shops = service.searchShops(inVacations, startDate, endDate, name);
 
-        // Affichage des résultats retournés
-        System.out.println("Résultat de la recherche : " + shops.size() + " magasins trouvés.");
+
+        System.out.println("Search result: " + shops.size() + " shops found.");
 
         return ResponseEntity.ok(shops);
     }
+
 
 }
