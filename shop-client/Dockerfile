@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package.json /app/package.json
 
 # install dependencies
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copy the current directory contents into the container at /app
 COPY . /app

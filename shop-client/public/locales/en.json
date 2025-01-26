@@ -1,0 +1,10 @@
+{
+    "header": {
+        "title": "Shop Management"
+    },
+    "navigation": {
+        "shops": "Shops",
+        "products": "Products",
+        "categories": "Categories"
+    }
+}

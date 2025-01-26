@@ -14,11 +14,12 @@ public class ShopAppApplication {
     }
 
     @Bean
-    public GroupedOpenApi api() {
+    public GroupedOpenApi shopAppApi() {
         return GroupedOpenApi.builder()
-                .group("shopapp")
-                .pathsToMatch("/**")
+                .group("ShopApp API")
+                .pathsToMatch("/api/v1/**")
                 .packagesToScan("fr.fullstack.shopapp.controller")
+                .displayName("Shop Management API")
                 .build();
     }
 }

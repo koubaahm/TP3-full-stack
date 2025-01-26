@@ -1,0 +1,10 @@
+{
+    "header": {
+        "title": "Gestion de boutiques"
+    },
+    "navigation": {
+        "shops": "Boutiques",
+        "products": "Produits",
+        "categories": "Catégories"
+    }
+}

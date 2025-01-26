@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from 'react';
 import Locale from '../types/locale';
+import i18n from '../utils/i18n';
 
 interface AppContextInterface {
     loading: boolean;
@@ -25,7 +26,13 @@ type Props = {
 
 export function AppProvider({ children }: Props) {
     const [loading, setLoading] = useState<boolean>(false);
-    const [locale, setLocale] = useState<Locale>(Locale.FR);
+    const [locale, setLocaleState] = useState<Locale>(Locale.FR);
+
+    // Fonction pour changer la langue et synchroniser avec i18next
+    const setLocale = (newLocale: Locale) => {
+        setLocaleState(newLocale);
+        i18n.changeLanguage(newLocale.toLowerCase()); // Met à jour la langue dans i18next
+    };
 
     return (
         <AppContext.Provider
@@ -33,7 +40,7 @@ export function AppProvider({ children }: Props) {
                 loading,
                 setLoading,
                 locale,
-                setLocale,
+                setLocale, // Utilise la fonction modifiée
             }}
         >
             {children}
